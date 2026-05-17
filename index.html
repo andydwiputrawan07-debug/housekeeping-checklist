@@ -338,7 +338,7 @@
   .stat-card.all::before { background: var(--text-dim); }
   .stat-card.done::before { background: var(--green); }
   .stat-card.partial::before { background: var(--amber); }
-  .stat-card.empty::before { background: var(--red); }
+  .stat-card.inc::before { background: var(--red); }
   .stat-card.pending::before { background: var(--text-muted); }
 
   .stat-num {
@@ -352,7 +352,7 @@
   .stat-card.all .stat-num { color: var(--text); }
   .stat-card.done .stat-num { color: var(--green); }
   .stat-card.partial .stat-num { color: var(--amber); }
-  .stat-card.empty .stat-num { color: var(--red); }
+  .stat-card.inc .stat-num { color: var(--red); }
   .stat-card.pending .stat-num { color: var(--text-muted); }
 
   .stat-label {
@@ -889,6 +889,26 @@
   .toast.warning { border-left: 3px solid var(--amber); }
 
 
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+    margin: 20px 0 8px;
+    padding-left: 2px;
+    border-left: 3px solid var(--gold);
+    padding-left: 10px;
+  }
+  .section-label:first-child { margin-top: 0; }
+  .rooms-section-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
   /* ===== INVENTORY ===== */
   .inv-month-bar {
     display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
@@ -973,7 +993,7 @@
   ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
   /* Empty state */
-  .empty-state {
+  .emptystate {
     text-align: center;
     padding: 32px 20px;
     color: var(--text-dim);
@@ -1110,7 +1130,7 @@
       <button class="filter-btn" onclick="setFilter('pending', this)">⏳ Menunggu</button>
     </div>
 
-    <div class="rooms-grid" id="rooms-grid"></div>
+    <div id="rooms-grid"></div>
   </div>
 
   <!-- TAB: DASHBOARD -->
@@ -1125,7 +1145,7 @@
           Kamar Bermasalah
         </div>
         <div class="panel-body" id="panel-issues">
-          <div class="empty-state">Belum ada data untuk hari ini.</div>
+          <div class="emptystate">Belum ada data untuk hari ini.</div>
         </div>
       </div>
 
@@ -1162,7 +1182,7 @@
     <div class="section-title">Riwayat Pengecekan</div>
     <div class="panel">
       <div class="panel-body" id="history-list">
-        <div class="empty-state">Belum ada riwayat pengecekan.</div>
+        <div class="emptystate">Belum ada riwayat pengecekan.</div>
       </div>
     </div>
   </div>
@@ -1235,51 +1255,63 @@
 
 <script>
 // ===== CONFIG =====
-const ROOMS = [1,2,3,4,"Nyoman","Made","Wayan",5,6,7,8,9,19,"Ketut",10,11,12,13,14,15,16,17,18];
+const ROOMS = [
+  { section: 'Section 1', rooms: [1,2,3,4,10,11,12] },
+  { section: 'Section 2', rooms: [5,6,7,13,14,15,'Nyoman','Ketut'] },
+  { section: 'Section 3', rooms: [8,9,19,16,17,18,'Made','Wayan'] },
+];
+const ALL_ROOMS = ROOMS.flatMap(s => s.rooms);
 const PIN_MAP = { housekeeping: '1111', receptionist: '2222', supervisor: '9999' };
 const ROLE_LABELS = { housekeeping: 'Housekeeping', receptionist: 'Receptionist', supervisor: 'Supervisor' };
 
 const AMENITIES = [
   {
-    id: 'towel', label: 'Towel & Linen', icon: '🛁', cls: 'cat-towel',
+    id: 'refill', label: 'Amenities Isi Ulang', icon: '🔄', cls: 'cat-drink', type: 'refill',
     items: [
-      { id: 'bath_towel', name: 'Bath Towel', std: 2 },
-      { id: 'hand_towel', name: 'Hand Towel', std: 2 },
-      { id: 'face_towel', name: 'Face Towel', std: 2 },
-      { id: 'floor_mat', name: 'Bath Mat', std: 1 },
+      { id: 'hand_towel',    name: 'Hand Towel',   std: 2, unit: 'pcs' },
+      { id: 'bath_towel',    name: 'Bath Towel',   std: 2, unit: 'pcs' },
+      { id: 'coffee',        name: 'Kopi',         std: 2, unit: 'sachet' },
+      { id: 'sugar',         name: 'Gula',         std: 2, unit: 'sachet' },
+      { id: 'tea',           name: 'Teh',          std: 2, unit: 'sachet' },
+      { id: 'creamer',       name: 'Creamer',      std: 2, unit: 'sachet' },
+      { id: 'water',         name: 'Air Minum',    std: 1, unit: 'botol' },
+      { id: 'slipper',       name: 'Slipper',      std: 2, unit: 'pcs' },
+      { id: 'toilet_paper',  name: 'Toilet Paper', std: 2, unit: 'roll' },
+      { id: 'toothbrush',    name: 'Toothbrush',   std: 2, unit: 'pcs' },
+      { id: 'hanger',        name: 'Hanger',       std: 3, unit: 'pcs' },
     ]
   },
   {
-    id: 'linen', label: 'Linen Kamar', icon: '🛏️', cls: 'cat-linen',
+    id: 'fixed', label: 'Amenities Tetap (Non-Refill)', icon: 'OK', cls: 'cat-linen', type: 'fixed',
     items: [
-      { id: 'bed_sheet', name: 'Bed Sheet', std: 1 },
-      { id: 'pillow_case', name: 'Pillow Case', std: 2 },
-      { id: 'duvet_cover', name: 'Duvet Cover', std: 1 },
+      { id: 'kettle',         name: 'Electric Kettle',      std: 1, unit: 'pcs' },
+      { id: 'shower_gel',     name: 'Shower Gel',           std: 1, unit: 'pcs' },
+      { id: 'shampoo',        name: 'Shampoo',              std: 1, unit: 'pcs' },
+      { id: 'hand_soap',      name: 'Hand Soap',            std: 1, unit: 'pcs' },
+      { id: 'spoon',          name: 'Sendok',               std: 2, unit: 'pcs' },
+      { id: 'cup_saucer',     name: 'Cangkir & Saucer',     std: 2, unit: 'set' },
+      { id: 'ashtray',        name: 'Asbak',                std: 1, unit: 'pcs' },
+      { id: 'remote_ac',      name: 'Remote AC',            std: 1, unit: 'pcs' },
+      { id: 'remote_tv',      name: 'Remote TV',            std: 1, unit: 'pcs' },
+      { id: 'dnd_sign',       name: 'DND Sign',             std: 1, unit: 'pcs' },
+      { id: 'drying_rack',    name: 'Jemuran Stainless',    std: 1, unit: 'pcs' },
+      { id: 'wifi_sign',      name: 'Sign WiFi',            std: 1, unit: 'pcs' },
+      { id: 'linen_sign',     name: 'Sign Change Linen',    std: 1, unit: 'pcs' },
+
+      { id: 'laundry_sign',   name: 'Sign Laundry',         std: 1, unit: 'pcs' },
+      { id: 'bath_glass',     name: 'Gelas Bathroom',       std: 2, unit: 'pcs' },
     ]
   },
   {
-    id: 'drink', label: 'Minuman', icon: '☕', cls: 'cat-drink',
+    id: 'safebox', label: 'Safe Box', icon: '🔒', cls: 'cat-towel', type: 'safebox',
     items: [
-      { id: 'coffee', name: 'Kopi Sachet', std: 4 },
-      { id: 'tea', name: 'Teh Sachet', std: 4 },
-      { id: 'sugar', name: 'Gula Sachet', std: 6 },
-      { id: 'creamer', name: 'Krimer Sachet', std: 4 },
-      { id: 'water', name: 'Air Mineral (botol)', std: 2 },
-    ]
-  },
-  {
-    id: 'toiletries', label: 'Toiletries', icon: '🧴', cls: 'cat-toiletries',
-    items: [
-      { id: 'soap', name: 'Sabun Mandi', std: 2 },
-      { id: 'shampoo', name: 'Sampo', std: 1 },
-      { id: 'conditioner', name: 'Kondisioner', std: 1 },
-      { id: 'toothbrush', name: 'Sikat Gigi', std: 2 },
-      { id: 'toothpaste', name: 'Pasta Gigi', std: 1 },
-      { id: 'shower_cap', name: 'Shower Cap', std: 1 },
-      { id: 'cotton_bud', name: 'Cotton Bud', std: 1 },
+      { id: 'safe_battery',   name: 'Mode Battery',      std: 1, unit: 'mode' },
+      { id: 'safe_key',       name: 'Mode Kunci Fisik',  std: 1, unit: 'mode' },
     ]
   }
 ];
+
+// ===== STATE =====
 
 // ===== STATE =====
 let currentUser = null;
@@ -1365,15 +1397,21 @@ function getRoomData(room) {
 function getRoomStatus(room) {
   const d = getRoomData(room);
   if (!d) return 'pending';
-  const allItems = AMENITIES.flatMap(c => c.items);
-  let issues = 0;
-  allItems.forEach(item => {
-    const qty = d.items?.[item.id] ?? item.std;
-    const ok = d.checked?.[item.id] ?? true;
-    if (!ok || qty < item.std) issues++;
+  let issues = 0, total = 0;
+  AMENITIES.forEach(cat => {
+    cat.items.forEach(item => {
+      total++;
+      const ok = d.checked?.[item.id] ?? true;
+      if (cat.type === 'refill') {
+        const qty = d.items?.[item.id] ?? item.std;
+        if (!ok || qty < item.std) issues++;
+      } else {
+        if (!ok) issues++;
+      }
+    });
   });
   if (issues === 0) return 'complete';
-  if (issues < allItems.length * 0.5) return 'partial';
+  if (issues < total * 0.5) return 'partial';
   return 'incomplete';
 }
 
@@ -1385,31 +1423,34 @@ function renderRooms() {
   const grid = document.getElementById('rooms-grid');
   let stats = { complete:0, partial:0, incomplete:0, pending:0 };
 
-  const cards = ROOMS.map(room => {
-    const status = getRoomStatus(room);
-    stats[status]++;
-    const d = getRoomData(room);
-    const allItems = AMENITIES.flatMap(c => c.items);
-    const total = allItems.length;
-    let ok = 0;
-    if (d) {
-      allItems.forEach(item => {
-        const qty = d.items?.[item.id] ?? item.std;
-        const chk = d.checked?.[item.id] ?? true;
-        if (chk && qty >= item.std) ok++;
-      });
-    }
-
-    const show = filterStatus === 'all' || filterStatus === status;
-    return `<div class="room-card status-${status}" onclick="openRoom('${room}')" style="${show?'':'display:none'}">
-      <div class="room-num">${room}</div>
-      <div class="room-status-dot"></div>
-      <div class="room-status-text">${getStatusLabel(status)}</div>
-      ${d ? `<div class="room-score">${ok}/${total}</div>` : ''}
-    </div>`;
+  let html = '';
+  ROOMS.forEach(section => {
+    const sectionCards = section.rooms.map(room => {
+      const status = getRoomStatus(room);
+      stats[status]++;
+      const d = getRoomData(room);
+      const allItems = AMENITIES.flatMap(c => c.items);
+      const total = allItems.length;
+      let ok = 0;
+      if (d) {
+        allItems.forEach(item => {
+          const qty = d.items?.[item.id] ?? item.std;
+          const chk = d.checked?.[item.id] ?? true;
+          if (chk && qty >= item.std) ok++;
+        });
+      }
+      const show = filterStatus === 'all' || filterStatus === status;
+      return `<div class="room-card status-${status}" onclick="openRoom('${room}')" style="${show?'':'display:none'}">
+        <div class="room-num">${room}</div>
+        <div class="room-status-dot"></div>
+        <div class="room-status-text">${getStatusLabel(status)}</div>
+        ${d ? `<div class="room-score">${ok}/${total}</div>` : ''}
+      </div>`;
+    });
+    html += `<div class="section-label">${section.section}</div><div class="rooms-section-grid">${sectionCards.join('')}</div>`;
   });
 
-  grid.innerHTML = cards.join('');
+  grid.innerHTML = html;
 
   document.getElementById('stat-complete').textContent = stats.complete;
   document.getElementById('stat-partial').textContent = stats.partial;
@@ -1440,8 +1481,9 @@ function openRoom(room) {
   tempData = {};
   AMENITIES.forEach(cat => {
     cat.items.forEach(item => {
+      const isRefill = cat.type === 'refill';
       tempData[item.id] = {
-        qty: saved?.items?.[item.id] ?? item.std,
+        qty: isRefill ? (saved?.items?.[item.id] ?? item.std) : item.std,
         ok: saved?.checked?.[item.id] ?? true
       };
     });
@@ -1465,8 +1507,9 @@ function openRoomView(room) {
   tempData = {};
   AMENITIES.forEach(cat => {
     cat.items.forEach(item => {
+      const isRefill = cat.type === 'refill';
       tempData[item.id] = {
-        qty: saved?.items?.[item.id] ?? item.std,
+        qty: isRefill ? (saved?.items?.[item.id] ?? item.std) : item.std,
         ok: saved?.checked?.[item.id] ?? true
       };
     });
@@ -1489,23 +1532,40 @@ function buildModalBody(notes, readonly=false) {
       </div>`;
     cat.items.forEach(item => {
       const state = tempData[item.id];
+      const isRefill = cat.type === 'refill';
       const qtyClass = state.qty < item.std ? 'low' : 'ok';
-      html += `<div class="amenity-item" id="item-row-${item.id}">
-        <div class="amenity-name">
-          ${item.name}
-          <span class="std">Std: ${item.std} pcs</span>
-        </div>
-        <div class="qty-control">
-          ${readonly ? '' : `<button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>`}
-          <span class="qty-val ${qtyClass}" id="qty-${item.id}">${state.qty}</span>
-          ${readonly ? '' : `<button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>`}
-        </div>
-        <label class="toggle" title="Tersedia">
-          <input type="checkbox" id="chk-${item.id}" ${state.ok ? 'checked' : ''} ${readonly ? 'disabled' : ''} onchange="toggleItem('${item.id}')">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>`;
+      const unitLabel = item.unit || 'pcs';
+      if (isRefill) {
+        html += `<div class="amenity-item" id="item-row-${item.id}">
+          <div class="amenity-name">
+            ${item.name}
+            <span class="std">Std: ${item.std} ${unitLabel}</span>
+          </div>
+          <div class="qty-control">
+            ${readonly ? '' : `<button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>`}
+            <span class="qty-val ${qtyClass}" id="qty-${item.id}">${state.qty}</span>
+            ${readonly ? '' : `<button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>`}
+          </div>
+          <label class="toggle" title="Tersedia">
+            <input type="checkbox" id="chk-${item.id}" ${state.ok ? 'checked' : ''} ${readonly ? 'disabled' : ''} onchange="toggleItem('${item.id}')">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>`;
+      } else {
+        // fixed & safebox: toggle only, no qty stepper
+        html += `<div class="amenity-item" id="item-row-${item.id}" style="grid-template-columns:1fr auto">
+          <div class="amenity-name">
+            ${item.name}
+            <span class="std">${cat.type === 'safebox' ? 'Cek kondisi' : `Std: ${item.std} ${unitLabel}`}</span>
+          </div>
+          <label class="toggle" title="Ada / OK">
+            <input type="checkbox" id="chk-${item.id}" ${state.ok ? 'checked' : ''} ${readonly ? 'disabled' : ''} onchange="toggleItem('${item.id}')">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>`;
+      }
     });
     html += `</div>`;
   });
@@ -1581,12 +1641,12 @@ function updateDashboard(stats) {
   if (currentRole !== 'supervisor' && currentRole !== 'receptionist') return;
 
   // Stats
-  const total = ROOMS.length;
+  const total = ALL_ROOMS.length;
   const checked = stats.complete + stats.partial + stats.incomplete;
   document.getElementById('dash-stats').innerHTML = `
     <div class="stat-card done"><div class="stat-num">${stats.complete}</div><div class="stat-label">Lengkap</div></div>
     <div class="stat-card partial"><div class="stat-num">${stats.partial}</div><div class="stat-label">Kurang</div></div>
-    <div class="stat-card empty"><div class="stat-num">${stats.incomplete}</div><div class="stat-label">Tdk Lengkap</div></div>
+    <div class="stat-card inc"><div class="stat-num">${stats.incomplete}</div><div class="stat-label">Tdk Lengkap</div></div>
     <div class="stat-card pending"><div class="stat-num">${stats.pending}</div><div class="stat-label">Belum Dicek</div></div>
   `;
 
@@ -1611,7 +1671,7 @@ function updateDashboard(stats) {
 
   const issuesEl = document.getElementById('panel-issues');
   if (issues.length === 0) {
-    issuesEl.innerHTML = '<div class="empty-state">Tidak ada masalah ditemukan. Semua kamar yang sudah dicek sudah lengkap! ✅</div>';
+    issuesEl.innerHTML = '<div class="emptystate">Tidak ada masalah ditemukan. Semua kamar yang sudah dicek sudah lengkap! ✅</div>';
   } else {
     issuesEl.innerHTML = issues.map(i => `
       <div class="issue-row">
@@ -1688,12 +1748,12 @@ function updateDashboard(stats) {
   const sorted = Object.entries(missingCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const misEl = document.getElementById('panel-missing');
   if (sorted.length === 0) {
-    misEl.innerHTML = '<div class="empty-state">Tidak ada item yang kurang hari ini.</div>';
+    misEl.innerHTML = '<div class="emptystate">Tidak ada item yang kurang hari ini.</div>';
   } else {
     misEl.innerHTML = sorted.map(([name, count]) => `
       <div class="amenity-bar-row">
         <span class="amenity-bar-label" style="font-size:12px;color:var(--text)">${name}</span>
-        <div class="amenity-bar-track"><div class="amenity-bar-fill low" style="width:${Math.min(100,count/ROOMS.length*100)}%"></div></div>
+        <div class="amenity-bar-track"><div class="amenity-bar-fill low" style="width:${Math.min(100,count/ALL_ROOMS.length*100)}%"></div></div>
         <span class="amenity-bar-pct" style="color:var(--red)">${count}×</span>
       </div>
     `).join('');
@@ -1704,7 +1764,7 @@ function updateDashboard(stats) {
 function renderHistory() {
   const el = document.getElementById('history-list');
   if (history.length === 0) {
-    el.innerHTML = '<div class="empty-state">Belum ada riwayat pengecekan.</div>';
+    el.innerHTML = '<div class="emptystate">Belum ada riwayat pengecekan.</div>';
     return;
   }
   el.innerHTML = history.slice(0,50).map(h => {
@@ -1743,25 +1803,34 @@ function switchTab(tab) {
 let invData = JSON.parse(localStorage.getItem('gsehati_inv') || '{}');
 
 const INV_ITEMS = [
-  { cat: '🛁 Towel', id: 'bath_towel',   name: 'Bath Towel',      unit: 'pcs', min: 30 },
-  { cat: '🛁 Towel', id: 'hand_towel',   name: 'Hand Towel',      unit: 'pcs', min: 30 },
-  { cat: '🛁 Towel', id: 'face_towel',   name: 'Face Towel',      unit: 'pcs', min: 30 },
-  { cat: '🛁 Towel', id: 'floor_mat',    name: 'Bath Mat',        unit: 'pcs', min: 15 },
-  { cat: '🛏️ Linen', id: 'bed_sheet',    name: 'Bed Sheet',       unit: 'pcs', min: 25 },
-  { cat: '🛏️ Linen', id: 'pillow_case',  name: 'Pillow Case',     unit: 'pcs', min: 40 },
-  { cat: '🛏️ Linen', id: 'duvet_cover',  name: 'Duvet Cover',     unit: 'pcs', min: 25 },
-  { cat: '☕ Minuman', id: 'coffee',      name: 'Kopi Sachet',     unit: 'sachet', min: 100 },
-  { cat: '☕ Minuman', id: 'tea',         name: 'Teh Sachet',      unit: 'sachet', min: 100 },
-  { cat: '☕ Minuman', id: 'sugar',       name: 'Gula Sachet',     unit: 'sachet', min: 150 },
-  { cat: '☕ Minuman', id: 'creamer',     name: 'Krimer Sachet',   unit: 'sachet', min: 100 },
-  { cat: '☕ Minuman', id: 'water',       name: 'Air Mineral',     unit: 'botol',  min: 50  },
-  { cat: '🧴 Toiletries', id: 'soap',       name: 'Sabun Mandi',  unit: 'pcs', min: 50 },
-  { cat: '🧴 Toiletries', id: 'shampoo',    name: 'Sampo',        unit: 'pcs', min: 30 },
-  { cat: '🧴 Toiletries', id: 'conditioner',name: 'Kondisioner',  unit: 'pcs', min: 30 },
-  { cat: '🧴 Toiletries', id: 'toothbrush', name: 'Sikat Gigi',   unit: 'pcs', min: 40 },
-  { cat: '🧴 Toiletries', id: 'toothpaste', name: 'Pasta Gigi',   unit: 'pcs', min: 30 },
-  { cat: '🧴 Toiletries', id: 'shower_cap', name: 'Shower Cap',   unit: 'pcs', min: 30 },
-  { cat: '🧴 Toiletries', id: 'cotton_bud', name: 'Cotton Bud',   unit: 'box', min: 20 },
+  // Isi Ulang
+  { cat: '🔄 Isi Ulang', id: 'hand_towel',   name: 'Hand Towel',    unit: 'pcs',    min: 50 },
+  { cat: '🔄 Isi Ulang', id: 'bath_towel',   name: 'Bath Towel',    unit: 'pcs',    min: 50 },
+  { cat: '🔄 Isi Ulang', id: 'coffee',       name: 'Kopi',          unit: 'sachet', min: 100 },
+  { cat: '🔄 Isi Ulang', id: 'sugar',        name: 'Gula',          unit: 'sachet', min: 100 },
+  { cat: '🔄 Isi Ulang', id: 'tea',          name: 'Teh',           unit: 'sachet', min: 100 },
+  { cat: '🔄 Isi Ulang', id: 'creamer',      name: 'Creamer',       unit: 'sachet', min: 100 },
+  { cat: '🔄 Isi Ulang', id: 'water',        name: 'Air Minum',     unit: 'botol',  min: 50  },
+  { cat: '🔄 Isi Ulang', id: 'slipper',      name: 'Slipper',       unit: 'pcs',    min: 50  },
+  { cat: '🔄 Isi Ulang', id: 'toilet_paper', name: 'Toilet Paper',  unit: 'roll',   min: 50  },
+  { cat: '🔄 Isi Ulang', id: 'toothbrush',   name: 'Toothbrush',    unit: 'pcs',    min: 50  },
+  { cat: '🔄 Isi Ulang', id: 'hanger',       name: 'Hanger',        unit: 'pcs',    min: 80  },
+  // Tetap / Non-Refill
+  { cat: 'Tetap', id: 'kettle',       name: 'Electric Kettle',   unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'shower_gel',   name: 'Shower Gel',        unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'shampoo',      name: 'Shampoo',           unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'hand_soap',    name: 'Hand Soap',         unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'spoon',        name: 'Sendok',            unit: 'pcs', min: 46 },
+  { cat: 'Tetap', id: 'cup_saucer',   name: 'Cangkir & Saucer',  unit: 'set', min: 46 },
+  { cat: 'Tetap', id: 'ashtray',      name: 'Asbak',             unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'remote_ac',    name: 'Remote AC',         unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'remote_tv',    name: 'Remote TV',         unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'dnd_sign',     name: 'DND Sign',          unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'drying_rack',  name: 'Jemuran Stainless', unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'wifi_sign',    name: 'Sign WiFi',         unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'linen_sign',   name: 'Sign Change Linen', unit: 'pcs', min: 23 },
+  { cat: 'Tetap', id: 'bath_glass',   name: 'Gelas Bathroom',    unit: 'pcs', min: 46 },
+  { cat: 'Tetap', id: 'laundry_sign', name: 'Sign Laundry',      unit: 'pcs', min: 23 },
 ];
 
 function initInvMonths() {
