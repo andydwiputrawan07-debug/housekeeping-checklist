@@ -888,6 +888,84 @@
   .toast.success { border-left: 3px solid var(--green); }
   .toast.warning { border-left: 3px solid var(--amber); }
 
+
+  /* ===== INVENTORY ===== */
+  .inv-month-bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .inv-month-bar select {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; outline: none; cursor: pointer;
+  }
+  .inv-month-bar select:focus { border-color: var(--gold); }
+  .inv-month-bar .btn-save-inv {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    border: none; border-radius: 8px; padding: 9px 20px;
+    color: #1a1400; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+  }
+  .inv-month-bar .btn-save-inv:hover { opacity: 0.9; }
+  .inv-month-bar .btn-save-inv:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .inv-table-wrap { overflow-x: auto; }
+  .inv-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .inv-table th {
+    background: var(--surface2); color: var(--text-muted);
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 12px 14px; text-align: left; border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  .inv-table th.num { text-align: center; }
+  .inv-table td {
+    padding: 10px 14px; border-bottom: 1px solid rgba(42,47,66,0.5);
+    color: var(--text); vertical-align: middle;
+  }
+  .inv-table td.num { text-align: center; }
+  .inv-table tr:last-child td { border-bottom: none; }
+  .inv-table tr:hover td { background: rgba(201,168,76,0.03); }
+
+  .inv-table .cat-row td {
+    background: var(--surface2); color: var(--gold);
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    font-weight: 600; padding: 8px 14px;
+  }
+
+  .inv-input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    width: 72px; text-align: center; outline: none; transition: border-color 0.2s;
+  }
+  .inv-input:focus { border-color: var(--gold); }
+  .inv-input:read-only { opacity: 0.5; cursor: not-allowed; }
+
+  .inv-diff { font-weight: 600; }
+  .inv-diff.pos { color: var(--green); }
+  .inv-diff.neg { color: var(--red); }
+  .inv-diff.zero { color: var(--text-muted); }
+
+  .inv-summary {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .inv-sum-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .inv-sum-card .label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .inv-sum-card .val { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text); }
+  .inv-sum-card.warn .val { color: var(--red); }
+  .inv-sum-card.ok .val { color: var(--green); }
+
+  .inv-readonly-note {
+    background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 8px; padding: 10px 16px; font-size: 12px; color: var(--gold);
+    margin-bottom: 16px; display: none;
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -986,6 +1064,7 @@
     <button class="nav-tab active" data-tab="rooms" onclick="switchTab('rooms')">🏨 Kamar</button>
     <button class="nav-tab" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
     <button class="nav-tab" data-tab="history" onclick="switchTab('history')">📋 Riwayat</button>
+    <button class="nav-tab" data-tab="inventory" onclick="switchTab('inventory')" id="tab-btn-inventory">📦 Stok Opname</button>
   </div>
 
   <!-- TAB: ROOMS -->
@@ -1087,6 +1166,48 @@
       </div>
     </div>
   </div>
+
+  <!-- TAB: INVENTORY -->
+  <div class="main" id="tab-inventory" style="display:none">
+    <div class="section-title">📦 Stok Opname Bulanan</div>
+
+    <div class="inv-readonly-note" id="inv-readonly-note">
+      ⚠️ Hanya Housekeeping yang dapat mengedit stok opname. Anda hanya dapat melihat data.
+    </div>
+
+    <div class="inv-month-bar">
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:6px;">Bulan / Tahun</label>
+        <select id="inv-month-select" onchange="loadInventory()"></select>
+      </div>
+      <div style="margin-top:20px">
+        <button class="btn-save-inv" id="inv-save-btn" onclick="saveInventory()">💾 Simpan Stok Opname</button>
+      </div>
+      <div style="margin-top:20px;margin-left:auto;font-size:12px;color:var(--text-muted)" id="inv-saved-by"></div>
+    </div>
+
+    <div class="inv-summary" id="inv-summary"></div>
+
+    <div class="panel">
+      <div class="inv-table-wrap">
+        <table class="inv-table" id="inv-table">
+          <thead>
+            <tr>
+              <th style="min-width:160px">Item</th>
+              <th class="num">Stok Awal</th>
+              <th class="num">Pemakaian</th>
+              <th class="num">Stok Akhir</th>
+              <th class="num">Selisih</th>
+              <th class="num">Min. Stok</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="inv-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- MODAL: Room Checklist -->
@@ -1114,7 +1235,7 @@
 
 <script>
 // ===== CONFIG =====
-const ROOMS = [1,2,3,4,'Nyoman','Made','Wayan',5,6,7,8,9,19,'Ketut',10,11,12,13,14,15,16,17,18];
+const ROOMS = [1,2,3,4,"Nyoman","Made","Wayan",5,6,7,8,9,19,"Ketut",10,11,12,13,14,15,16,17,18];
 const PIN_MAP = { housekeeping: '1111', receptionist: '2222', supervisor: '9999' };
 const ROLE_LABELS = { housekeeping: 'Housekeeping', receptionist: 'Receptionist', supervisor: 'Supervisor' };
 
@@ -1192,13 +1313,13 @@ function doLogin() {
 
   // Tab visibility based on role
   const tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach(t => t.style.display = '');
   if (role === 'housekeeping') {
-    // hide dashboard tab
+    // hide dashboard tab for housekeeping
     tabs[1].style.display = 'none';
     tabs[2].style.display = 'none';
-  } else {
-    tabs.forEach(t => t.style.display = '');
   }
+  // inventory tab visible to all
 
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -1280,7 +1401,7 @@ function renderRooms() {
     }
 
     const show = filterStatus === 'all' || filterStatus === status;
-    return `<div class="room-card status-${status}" onclick="openRoom(${room})" style="${show?'':'display:none'}">
+    return `<div class="room-card status-${status}" onclick="openRoom('${room}')" style="${show?'':'display:none'}">
       <div class="room-num">${room}</div>
       <div class="room-status-dot"></div>
       <div class="room-status-text">${getStatusLabel(status)}</div>
@@ -1607,14 +1728,190 @@ function renderHistory() {
 
 // ===== TABS =====
 function switchTab(tab) {
-  ['rooms','dashboard','history'].forEach(t => {
+  ['rooms','dashboard','history','inventory'].forEach(t => {
     document.getElementById(`tab-${t}`).style.display = t===tab ? '' : 'none';
   });
   document.querySelectorAll('.nav-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
   if (tab==='history') renderHistory();
+  if (tab==='inventory') { initInvMonths(); loadInventory(); }
 }
+
+
+// ===== INVENTORY =====
+let invData = JSON.parse(localStorage.getItem('gsehati_inv') || '{}');
+
+const INV_ITEMS = [
+  { cat: '🛁 Towel', id: 'bath_towel',   name: 'Bath Towel',      unit: 'pcs', min: 30 },
+  { cat: '🛁 Towel', id: 'hand_towel',   name: 'Hand Towel',      unit: 'pcs', min: 30 },
+  { cat: '🛁 Towel', id: 'face_towel',   name: 'Face Towel',      unit: 'pcs', min: 30 },
+  { cat: '🛁 Towel', id: 'floor_mat',    name: 'Bath Mat',        unit: 'pcs', min: 15 },
+  { cat: '🛏️ Linen', id: 'bed_sheet',    name: 'Bed Sheet',       unit: 'pcs', min: 25 },
+  { cat: '🛏️ Linen', id: 'pillow_case',  name: 'Pillow Case',     unit: 'pcs', min: 40 },
+  { cat: '🛏️ Linen', id: 'duvet_cover',  name: 'Duvet Cover',     unit: 'pcs', min: 25 },
+  { cat: '☕ Minuman', id: 'coffee',      name: 'Kopi Sachet',     unit: 'sachet', min: 100 },
+  { cat: '☕ Minuman', id: 'tea',         name: 'Teh Sachet',      unit: 'sachet', min: 100 },
+  { cat: '☕ Minuman', id: 'sugar',       name: 'Gula Sachet',     unit: 'sachet', min: 150 },
+  { cat: '☕ Minuman', id: 'creamer',     name: 'Krimer Sachet',   unit: 'sachet', min: 100 },
+  { cat: '☕ Minuman', id: 'water',       name: 'Air Mineral',     unit: 'botol',  min: 50  },
+  { cat: '🧴 Toiletries', id: 'soap',       name: 'Sabun Mandi',  unit: 'pcs', min: 50 },
+  { cat: '🧴 Toiletries', id: 'shampoo',    name: 'Sampo',        unit: 'pcs', min: 30 },
+  { cat: '🧴 Toiletries', id: 'conditioner',name: 'Kondisioner',  unit: 'pcs', min: 30 },
+  { cat: '🧴 Toiletries', id: 'toothbrush', name: 'Sikat Gigi',   unit: 'pcs', min: 40 },
+  { cat: '🧴 Toiletries', id: 'toothpaste', name: 'Pasta Gigi',   unit: 'pcs', min: 30 },
+  { cat: '🧴 Toiletries', id: 'shower_cap', name: 'Shower Cap',   unit: 'pcs', min: 30 },
+  { cat: '🧴 Toiletries', id: 'cotton_bud', name: 'Cotton Bud',   unit: 'box', min: 20 },
+];
+
+function initInvMonths() {
+  const sel = document.getElementById('inv-month-select');
+  sel.innerHTML = '';
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = d.toISOString().slice(0,7); // YYYY-MM
+    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    sel.innerHTML += `<option value="${val}">${label}</option>`;
+  }
+}
+
+function getInvMonth() {
+  return document.getElementById('inv-month-select').value;
+}
+
+function canEditInv() {
+  return currentRole === 'housekeeping';
+}
+
+function loadInventory() {
+  const month = getInvMonth();
+  const saved = invData[month] || {};
+  const readonly = !canEditInv();
+
+  document.getElementById('inv-readonly-note').style.display = readonly ? 'block' : 'none';
+  document.getElementById('inv-save-btn').disabled = readonly;
+
+  // Saved by info
+  const byEl = document.getElementById('inv-saved-by');
+  if (saved._meta) {
+    byEl.innerHTML = `Terakhir disimpan oleh <b style="color:var(--text)">${saved._meta.by}</b> pada ${saved._meta.at}`;
+  } else {
+    byEl.innerHTML = '';
+  }
+
+  // Build table
+  const tbody = document.getElementById('inv-tbody');
+  let html = '';
+  let lastCat = '';
+  INV_ITEMS.forEach(item => {
+    if (item.cat !== lastCat) {
+      html += `<tr class="cat-row"><td colspan="7">${item.cat}</td></tr>`;
+      lastCat = item.cat;
+    }
+    const awal   = saved[item.id]?.awal   ?? '';
+    const pakai  = saved[item.id]?.pakai  ?? '';
+    const akhir  = saved[item.id]?.akhir  ?? '';
+    const ro = readonly ? 'readonly' : '';
+
+    // calc diff
+    const aNum = parseInt(awal)||0, pNum = parseInt(pakai)||0, kNum = parseInt(akhir)||0;
+    let diffHtml = '<span class="inv-diff zero">—</span>';
+    if (awal !== '' && pakai !== '' && akhir !== '') {
+      const expected = aNum - pNum;
+      const diff = kNum - expected;
+      const cls = diff > 0 ? 'pos' : diff < 0 ? 'neg' : 'zero';
+      const sign = diff > 0 ? '+' : '';
+      diffHtml = `<span class="inv-diff ${cls}">${sign}${diff}</span>`;
+    }
+
+    const statusBadge = akhir !== '' ? (kNum < item.min
+      ? `<span class="issue-badge badge-red">⚠️ Kurang</span>`
+      : `<span class="issue-badge badge-green">✅ Aman</span>`)
+      : `<span class="issue-badge" style="color:var(--text-dim);border-color:var(--border)">—</span>`;
+
+    html += `<tr>
+      <td>${item.name} <span style="font-size:11px;color:var(--text-dim)">(${item.unit})</span></td>
+      <td class="num"><input class="inv-input" type="number" min="0" id="inv_awal_${item.id}" value="${awal}" placeholder="0" ${ro} oninput="recalcRow('${item.id}')"></td>
+      <td class="num"><input class="inv-input" type="number" min="0" id="inv_pakai_${item.id}" value="${pakai}" placeholder="0" ${ro} oninput="recalcRow('${item.id}')"></td>
+      <td class="num"><input class="inv-input" type="number" min="0" id="inv_akhir_${item.id}" value="${akhir}" placeholder="0" ${ro} oninput="recalcRow('${item.id}')"></td>
+      <td class="num" id="inv_diff_${item.id}">${diffHtml}</td>
+      <td class="num" style="color:var(--text-muted)">${item.min}</td>
+      <td id="inv_status_${item.id}">${statusBadge}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+  renderInvSummary(saved);
+}
+
+function recalcRow(itemId) {
+  const awal  = parseInt(document.getElementById(`inv_awal_${itemId}`)?.value)||0;
+  const pakai = parseInt(document.getElementById(`inv_pakai_${itemId}`)?.value)||0;
+  const akhir = parseInt(document.getElementById(`inv_akhir_${itemId}`)?.value)||0;
+  const aEl = document.getElementById(`inv_awal_${itemId}`);
+  const pEl = document.getElementById(`inv_pakai_${itemId}`);
+  const kEl = document.getElementById(`inv_akhir_${itemId}`);
+
+  if (aEl?.value !== '' && pEl?.value !== '' && kEl?.value !== '') {
+    const expected = awal - pakai;
+    const diff = akhir - expected;
+    const cls = diff > 0 ? 'pos' : diff < 0 ? 'neg' : 'zero';
+    const sign = diff > 0 ? '+' : '';
+    document.getElementById(`inv_diff_${itemId}`).innerHTML = `<span class="inv-diff ${cls}">${sign}${diff}</span>`;
+
+    const item = INV_ITEMS.find(i=>i.id===itemId);
+    document.getElementById(`inv_status_${itemId}`).innerHTML = akhir < item.min
+      ? `<span class="issue-badge badge-red">⚠️ Kurang</span>`
+      : `<span class="issue-badge badge-green">✅ Aman</span>`;
+  }
+}
+
+function renderInvSummary(saved) {
+  let totalItems = INV_ITEMS.length;
+  let filledItems = 0, kurangItems = 0;
+  INV_ITEMS.forEach(item => {
+    const akhir = saved[item.id]?.akhir;
+    if (akhir !== undefined && akhir !== '') {
+      filledItems++;
+      if (parseInt(akhir) < item.min) kurangItems++;
+    }
+  });
+  const amanItems = filledItems - kurangItems;
+  document.getElementById('inv-summary').innerHTML = `
+    <div class="inv-sum-card"><div class="label">Total Item</div><div class="val">${totalItems}</div></div>
+    <div class="inv-sum-card"><div class="label">Sudah Diisi</div><div class="val">${filledItems}</div></div>
+    <div class="inv-sum-card ok"><div class="label">Stok Aman</div><div class="val">${amanItems}</div></div>
+    <div class="inv-sum-card warn"><div class="label">Stok Kurang</div><div class="val">${kurangItems}</div></div>
+  `;
+}
+
+function saveInventory() {
+  if (!canEditInv()) return;
+  const month = getInvMonth();
+  if (!invData[month]) invData[month] = {};
+
+  INV_ITEMS.forEach(item => {
+    invData[month][item.id] = {
+      awal:  document.getElementById(`inv_awal_${item.id}`)?.value  || '',
+      pakai: document.getElementById(`inv_pakai_${item.id}`)?.value || '',
+      akhir: document.getElementById(`inv_akhir_${item.id}`)?.value || '',
+    };
+  });
+
+  const now = new Date();
+  invData[month]._meta = {
+    by: currentUser,
+    at: now.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) + ' ' +
+        now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})
+  };
+
+  localStorage.setItem('gsehati_inv', JSON.stringify(invData));
+  renderInvSummary(invData[month]);
+  document.getElementById('inv-saved-by').innerHTML =
+    `Terakhir disimpan oleh <b style="color:var(--text)">${currentUser}</b> pada ${invData[month]._meta.at}`;
+  showToast('Stok opname berhasil disimpan ✓', 'success');
+}
+
 
 // ===== TOAST =====
 function showToast(msg, type='success') {
