@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Sehati Inn & Spa — Housekeeping System</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2333;
+    --border: #2a2f42;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --gold-dim: rgba(201,168,76,0.15);
+    --teal: #3ecfb2;
+    --red: #e05c6e;
+    --amber: #e09a3e;
+    --green: #4caf81;
+    --text: #e8eaf0;
+    --text-muted: #7a8099;
+    --text-dim: #4a5068;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(201,168,76,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 90%, rgba(62,207,178,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== LOGIN ===== */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+  }
+
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 380px;
+    box-shadow: var(--shadow), 0 0 60px rgba(201,168,76,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .login-logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .login-logo .brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--gold);
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+  }
+
+  .login-logo .sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .login-logo .divider {
+    width: 40px; height: 1px;
+    background: var(--gold);
+    margin: 12px auto;
+    opacity: 0.4;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .form-group select, .form-group input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+
+  .form-group select:focus, .form-group input:focus {
+    border-color: var(--gold);
+  }
+
+  .login-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    color: #1a1400;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .login-btn:hover { opacity: 0.9; }
+  .login-btn:active { transform: scale(0.98); }
+
+  .login-error {
+    background: rgba(224,92,110,0.12);
+    border: 1px solid rgba(224,92,110,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--red);
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* ===== APP ===== */
+  #app { display: none; position: relative; z-index: 1; min-height: 100vh; }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky; top: 0; z-index: 50;
+  }
+
+  .header-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--gold);
+  }
+
+  .header-brand span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+    margin-top: -2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .role-badge {
+    background: var(--gold-dim);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .user-info {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .logout-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .logout-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+  /* Nav */
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 16px 24px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .nav-tab {
+    padding: 10px 20px;
+    border-radius: 8px 8px 0 0;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: all 0.2s;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    position: relative;
+    bottom: -1px;
+  }
+
+  .nav-tab.active {
+    color: var(--gold);
+    background: var(--bg);
+    border-color: var(--border);
+    border-bottom-color: var(--bg);
+  }
+
+  .nav-tab:hover:not(.active) { color: var(--text); }
+
+  /* Main content */
+  .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* Date bar */
+  .date-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .date-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .date-display small {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: block;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .date-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .date-input-wrap input[type="date"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .date-input-wrap input[type="date"]:focus { border-color: var(--gold); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.all::before { background: var(--text-dim); }
+  .stat-card.done::before { background: var(--green); }
+  .stat-card.partial::before { background: var(--amber); }
+  .stat-card.empty::before { background: var(--red); }
+  .stat-card.pending::before { background: var(--text-muted); }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-card.all .stat-num { color: var(--text); }
+  .stat-card.done .stat-num { color: var(--green); }
+  .stat-card.partial .stat-num { color: var(--amber); }
+  .stat-card.empty .stat-num { color: var(--red); }
+  .stat-card.pending .stat-num { color: var(--text-muted); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Room grid */
+  .rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .room-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .room-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(201,168,76,0.1);
+  }
+
+  .room-card.status-complete { border-color: rgba(76,175,129,0.4); }
+  .room-card.status-partial { border-color: rgba(224,154,62,0.4); }
+  .room-card.status-incomplete { border-color: rgba(224,92,110,0.3); }
+  .room-card.status-pending { border-color: var(--border); }
+
+  .room-card .room-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .room-status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+  }
+
+  .status-complete .room-status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-partial .room-status-dot { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .status-incomplete .room-status-dot { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .status-pending .room-status-dot { background: var(--text-dim); }
+
+  .room-status-text {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .status-complete .room-status-text { color: var(--green); }
+  .status-partial .room-status-text { color: var(--amber); }
+  .status-incomplete .room-status-text { color: var(--red); }
+  .status-pending .room-status-text { color: var(--text-dim); }
+
+  .room-score {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+    display: none;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 620px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+
+  .modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    z-index: 10;
+  }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .modal-title small {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: block;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .modal-close {
+    width: 32px; height: 32px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.2s;
+    font-family: monospace;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body { padding: 20px 24px 24px; }
+
+  /* Amenity category */
+  .amenity-category {
+    margin-bottom: 20px;
+  }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .category-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .cat-towel .category-icon { background: rgba(62,207,178,0.15); }
+  .cat-drink .category-icon { background: rgba(201,168,76,0.15); }
+  .cat-toiletries .category-icon { background: rgba(160,100,210,0.15); }
+  .cat-linen .category-icon { background: rgba(100,160,220,0.15); }
+
+  .category-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.5px;
+  }
+
+  /* Amenity item row */
+  .amenity-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(42,47,66,0.5);
+  }
+
+  .amenity-item:last-child { border-bottom: none; }
+
+  .amenity-name {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .amenity-name .std {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 1px;
+  }
+
+  .qty-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .qty-btn {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
+    line-height: 1;
+  }
+
+  .qty-btn:hover { border-color: var(--gold); background: var(--gold-dim); }
+
+  .qty-val {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .qty-val.low { color: var(--red); }
+  .qty-val.ok { color: var(--green); }
+
+  /* Toggle checkbox */
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toggle {
+    position: relative;
+    width: 40px; height: 22px;
+    cursor: pointer;
+  }
+
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    transition: all 0.2s;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+  /* Notes */
+  .notes-section { margin-top: 16px; }
+
+  .notes-section label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .notes-section textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 70px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .notes-section textarea:focus { border-color: var(--gold); }
+
+  /* Modal footer */
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    position: sticky; bottom: 0;
+    background: var(--surface);
+    border-radius: 0 0 20px 20px;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn-ghost {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .btn-ghost:hover { color: var(--text); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: #1a1400;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+
+  /* ===== SUPERVISOR DASHBOARD ===== */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 700px) {
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  .panel-body { padding: 16px 20px; }
+
+  /* Issues list */
+  .issue-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(42,47,66,0.5);
+    gap: 10px;
+  }
+
+  .issue-row:last-child { border-bottom: none; }
+
+  .issue-room {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--text);
+    min-width: 48px;
+  }
+
+  .issue-detail {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .issue-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .badge-red { background: rgba(224,92,110,0.15); color: var(--red); border: 1px solid rgba(224,92,110,0.25); }
+  .badge-amber { background: rgba(224,154,62,0.15); color: var(--amber); border: 1px solid rgba(224,154,62,0.25); }
+  .badge-green { background: rgba(76,175,129,0.15); color: var(--green); border: 1px solid rgba(76,175,129,0.25); }
+
+  /* Amenity summary chart */
+  .amenity-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .amenity-bar-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 100px;
+  }
+
+  .amenity-bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .amenity-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--green);
+    transition: width 0.4s ease;
+  }
+
+  .amenity-bar-fill.low { background: var(--red); }
+  .amenity-bar-fill.mid { background: var(--amber); }
+
+  .amenity-bar-pct {
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* Progress ring */
+  .progress-ring-wrap {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 8px 0;
+  }
+
+  .progress-ring {
+    position: relative;
+    width: 80px; height: 80px;
+    flex-shrink: 0;
+  }
+
+  .progress-ring svg { transform: rotate(-90deg); }
+
+  .progress-ring-num {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--text);
+  }
+
+  .ring-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+  .ring-desc strong { color: var(--text); font-size: 15px; }
+
+  /* History log */
+  .history-entry {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(42,47,66,0.5);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .history-entry:last-child { border-bottom: none; }
+
+  .history-time {
+    color: var(--text-dim);
+    min-width: 60px;
+    padding-top: 2px;
+  }
+
+  .history-entry .room-tag {
+    color: var(--gold);
+    font-weight: 500;
+    margin-right: 4px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 300px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.warning { border-left: 3px solid var(--amber); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+  .filter-btn:hover:not(.active) { color: var(--text); border-color: var(--text-dim); }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="brand">Grand Sehati<br>Inn & Spa</div>
+      <div class="divider"></div>
+      <div class="sub">Housekeeping System</div>
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="login-role">
+        <option value="">— Pilih Role —</option>
+        <option value="housekeeping">Housekeeping</option>
+        <option value="receptionist">Receptionist</option>
+        <option value="supervisor">Supervisor / Manager</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Nama</label>
+      <input type="text" id="login-name" placeholder="Masukkan nama Anda">
+    </div>
+    <div class="form-group">
+      <label>PIN</label>
+      <input type="password" id="login-pin" placeholder="••••" maxlength="4">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Masuk →</button>
+    <div class="login-error" id="login-error">Role, nama, atau PIN tidak valid.</div>
+    <div style="margin-top:16px; font-size:11px; color:var(--text-dim); text-align:center; line-height:1.6;">
+      Demo PIN: housekeeping <b style="color:var(--text-muted)">1111</b> · receptionist <b style="color:var(--text-muted)">2222</b> · supervisor <b style="color:var(--text-muted)">9999</b>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-brand">
+      Grand Sehati Inn & Spa
+      <span>Housekeeping Management</span>
+    </div>
+    <div class="header-right">
+      <span class="role-badge" id="header-role">—</span>
+      <span class="user-info" id="header-user">—</span>
+      <button class="logout-btn" onclick="doLogout()">Keluar</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs" id="nav-tabs">
+    <button class="nav-tab active" data-tab="rooms" onclick="switchTab('rooms')">🏨 Kamar</button>
+    <button class="nav-tab" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" data-tab="history" onclick="switchTab('history')">📋 Riwayat</button>
+  </div>
+
+  <!-- TAB: ROOMS -->
+  <div class="main" id="tab-rooms">
+    <div class="date-bar">
+      <div class="date-display">
+        <small>Tanggal Pengecekan</small>
+        <span id="display-date">—</span>
+      </div>
+      <div class="date-input-wrap">
+        <input type="date" id="check-date" onchange="onDateChange()">
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card all">
+        <div class="stat-num" id="stat-total">23</div>
+        <div class="stat-label">Total Kamar</div>
+      </div>
+      <div class="stat-card done">
+        <div class="stat-num" id="stat-complete">0</div>
+        <div class="stat-label">Lengkap</div>
+      </div>
+      <div class="stat-card partial">
+        <div class="stat-num" id="stat-partial">0</div>
+        <div class="stat-label">Kurang</div>
+      </div>
+      <div class="stat-card empty">
+        <div class="stat-num" id="stat-incomplete">0</div>
+        <div class="stat-label">Belum Cek</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-num" id="stat-pending">23</div>
+        <div class="stat-label">Menunggu</div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all', this)">Semua (<span id="filter-total">23</span>)</button>
+      <button class="filter-btn" onclick="setFilter('complete', this)">✅ Lengkap</button>
+      <button class="filter-btn" onclick="setFilter('partial', this)">⚠️ Kurang</button>
+      <button class="filter-btn" onclick="setFilter('incomplete', this)">❌ Belum Cek</button>
+      <button class="filter-btn" onclick="setFilter('pending', this)">⏳ Menunggu</button>
+    </div>
+
+    <div class="rooms-grid" id="rooms-grid"></div>
+  </div>
+
+  <!-- TAB: DASHBOARD -->
+  <div class="main" id="tab-dashboard" style="display:none">
+    <div class="section-title">Overview Harian</div>
+    <div class="stats-row" id="dash-stats"></div>
+
+    <div class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="dot" style="background:var(--red)"></span>
+          Kamar Bermasalah
+        </div>
+        <div class="panel-body" id="panel-issues">
+          <div class="empty-state">Belum ada data untuk hari ini.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="dot" style="background:var(--teal)"></span>
+          Kelengkapan per Kategori
+        </div>
+        <div class="panel-body" id="panel-category"></div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="dot" style="background:var(--gold)"></span>
+          Progress Pengecekan
+        </div>
+        <div class="panel-body" id="panel-progress"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="dot" style="background:var(--amber)"></span>
+          Item Paling Sering Kurang
+        </div>
+        <div class="panel-body" id="panel-missing"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: HISTORY -->
+  <div class="main" id="tab-history" style="display:none">
+    <div class="section-title">Riwayat Pengecekan</div>
+    <div class="panel">
+      <div class="panel-body" id="history-list">
+        <div class="empty-state">Belum ada riwayat pengecekan.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Room Checklist -->
+<div class="modal-overlay" id="room-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        Kamar <span id="modal-room-num">—</span>
+        <small id="modal-room-date">—</small>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <!-- injected -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveRoom()">Simpan Checklist</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+const ROOMS = [1,2,3,4,'Nyoman','Made','Wayan',5,6,7,8,9,19,'Ketut',10,11,12,13,14,15,16,17,18];
+const PIN_MAP = { housekeeping: '1111', receptionist: '2222', supervisor: '9999' };
+const ROLE_LABELS = { housekeeping: 'Housekeeping', receptionist: 'Receptionist', supervisor: 'Supervisor' };
+
+const AMENITIES = [
+  {
+    id: 'towel', label: 'Towel & Linen', icon: '🛁', cls: 'cat-towel',
+    items: [
+      { id: 'bath_towel', name: 'Bath Towel', std: 2 },
+      { id: 'hand_towel', name: 'Hand Towel', std: 2 },
+      { id: 'face_towel', name: 'Face Towel', std: 2 },
+      { id: 'floor_mat', name: 'Bath Mat', std: 1 },
+    ]
+  },
+  {
+    id: 'linen', label: 'Linen Kamar', icon: '🛏️', cls: 'cat-linen',
+    items: [
+      { id: 'bed_sheet', name: 'Bed Sheet', std: 1 },
+      { id: 'pillow_case', name: 'Pillow Case', std: 2 },
+      { id: 'duvet_cover', name: 'Duvet Cover', std: 1 },
+    ]
+  },
+  {
+    id: 'drink', label: 'Minuman', icon: '☕', cls: 'cat-drink',
+    items: [
+      { id: 'coffee', name: 'Kopi Sachet', std: 4 },
+      { id: 'tea', name: 'Teh Sachet', std: 4 },
+      { id: 'sugar', name: 'Gula Sachet', std: 6 },
+      { id: 'creamer', name: 'Krimer Sachet', std: 4 },
+      { id: 'water', name: 'Air Mineral (botol)', std: 2 },
+    ]
+  },
+  {
+    id: 'toiletries', label: 'Toiletries', icon: '🧴', cls: 'cat-toiletries',
+    items: [
+      { id: 'soap', name: 'Sabun Mandi', std: 2 },
+      { id: 'shampoo', name: 'Sampo', std: 1 },
+      { id: 'conditioner', name: 'Kondisioner', std: 1 },
+      { id: 'toothbrush', name: 'Sikat Gigi', std: 2 },
+      { id: 'toothpaste', name: 'Pasta Gigi', std: 1 },
+      { id: 'shower_cap', name: 'Shower Cap', std: 1 },
+      { id: 'cotton_bud', name: 'Cotton Bud', std: 1 },
+    ]
+  }
+];
+
+// ===== STATE =====
+let currentUser = null;
+let currentRole = null;
+let today = new Date().toISOString().split('T')[0];
+let selectedDate = today;
+let filterStatus = 'all';
+let currentRoomEdit = null;
+let tempData = {};
+
+// data[date][room] = { items: {itemId: qty}, checked: {itemId: bool}, notes: '', savedBy, savedAt }
+let data = JSON.parse(localStorage.getItem('gsehati_data') || '{}');
+let history = JSON.parse(localStorage.getItem('gsehati_history') || '[]');
+
+// ===== AUTH =====
+function doLogin() {
+  const role = document.getElementById('login-role').value;
+  const name = document.getElementById('login-name').value.trim();
+  const pin = document.getElementById('login-pin').value;
+  const err = document.getElementById('login-error');
+
+  if (!role || !name || !pin) { err.style.display = 'block'; err.textContent = 'Semua field harus diisi.'; return; }
+  if (PIN_MAP[role] !== pin) { err.style.display = 'block'; err.textContent = 'PIN tidak sesuai dengan role.'; return; }
+
+  currentUser = name;
+  currentRole = role;
+  err.style.display = 'none';
+
+  document.getElementById('header-role').textContent = ROLE_LABELS[role];
+  document.getElementById('header-user').textContent = name;
+
+  // Tab visibility based on role
+  const tabs = document.querySelectorAll('.nav-tab');
+  if (role === 'housekeeping') {
+    // hide dashboard tab
+    tabs[1].style.display = 'none';
+    tabs[2].style.display = 'none';
+  } else {
+    tabs.forEach(t => t.style.display = '');
+  }
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  initDate();
+  renderRooms();
+}
+
+function doLogout() {
+  currentUser = null; currentRole = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-pin').value = '';
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-role').value = '';
+}
+
+// ===== DATE =====
+function initDate() {
+  const input = document.getElementById('check-date');
+  input.value = today;
+  selectedDate = today;
+  updateDateDisplay();
+}
+
+function onDateChange() {
+  selectedDate = document.getElementById('check-date').value;
+  updateDateDisplay();
+  renderRooms();
+}
+
+function updateDateDisplay() {
+  const d = new Date(selectedDate + 'T00:00:00');
+  const opts = { weekday:'long', day:'numeric', month:'long', year:'numeric' };
+  document.getElementById('display-date').textContent = d.toLocaleDateString('id-ID', opts);
+}
+
+// ===== ROOMS =====
+function getRoomData(room) {
+  return data[selectedDate]?.[room] || null;
+}
+
+function getRoomStatus(room) {
+  const d = getRoomData(room);
+  if (!d) return 'pending';
+  const allItems = AMENITIES.flatMap(c => c.items);
+  let issues = 0;
+  allItems.forEach(item => {
+    const qty = d.items?.[item.id] ?? item.std;
+    const ok = d.checked?.[item.id] ?? true;
+    if (!ok || qty < item.std) issues++;
+  });
+  if (issues === 0) return 'complete';
+  if (issues < allItems.length * 0.5) return 'partial';
+  return 'incomplete';
+}
+
+function getStatusLabel(s) {
+  return { complete:'Lengkap', partial:'Kurang', incomplete:'Tdk Lengkap', pending:'Menunggu' }[s];
+}
+
+function renderRooms() {
+  const grid = document.getElementById('rooms-grid');
+  let stats = { complete:0, partial:0, incomplete:0, pending:0 };
+
+  const cards = ROOMS.map(room => {
+    const status = getRoomStatus(room);
+    stats[status]++;
+    const d = getRoomData(room);
+    const allItems = AMENITIES.flatMap(c => c.items);
+    const total = allItems.length;
+    let ok = 0;
+    if (d) {
+      allItems.forEach(item => {
+        const qty = d.items?.[item.id] ?? item.std;
+        const chk = d.checked?.[item.id] ?? true;
+        if (chk && qty >= item.std) ok++;
+      });
+    }
+
+    const show = filterStatus === 'all' || filterStatus === status;
+    return `<div class="room-card status-${status}" onclick="openRoom(${room})" style="${show?'':'display:none'}">
+      <div class="room-num">${room}</div>
+      <div class="room-status-dot"></div>
+      <div class="room-status-text">${getStatusLabel(status)}</div>
+      ${d ? `<div class="room-score">${ok}/${total}</div>` : ''}
+    </div>`;
+  });
+
+  grid.innerHTML = cards.join('');
+
+  document.getElementById('stat-complete').textContent = stats.complete;
+  document.getElementById('stat-partial').textContent = stats.partial;
+  document.getElementById('stat-incomplete').textContent = stats.incomplete;
+  document.getElementById('stat-pending').textContent = stats.pending;
+
+  updateDashboard(stats);
+}
+
+function setFilter(f, btn) {
+  filterStatus = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRooms();
+}
+
+// ===== MODAL =====
+function openRoom(room) {
+  if (currentRole === 'supervisor') {
+    // supervisor: view only
+    openRoomView(room);
+    return;
+  }
+  currentRoomEdit = room;
+  const saved = getRoomData(room);
+
+  // Build temp state
+  tempData = {};
+  AMENITIES.forEach(cat => {
+    cat.items.forEach(item => {
+      tempData[item.id] = {
+        qty: saved?.items?.[item.id] ?? item.std,
+        ok: saved?.checked?.[item.id] ?? true
+      };
+    });
+  });
+
+  document.getElementById('modal-room-num').textContent = room;
+  const d = new Date(selectedDate + 'T00:00:00');
+  document.getElementById('modal-room-date').textContent = d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  document.getElementById('modal-body').innerHTML = buildModalBody(saved?.notes || '');
+  document.getElementById('room-modal').classList.add('open');
+
+  const canEdit = currentRole === 'housekeeping' || currentRole === 'receptionist';
+  document.getElementById('save-btn').style.display = canEdit ? '' : 'none';
+}
+
+function openRoomView(room) {
+  currentRoomEdit = room;
+  const saved = getRoomData(room);
+  if (!saved) { showToast('Kamar ini belum dicek hari ini.', 'warning'); return; }
+  tempData = {};
+  AMENITIES.forEach(cat => {
+    cat.items.forEach(item => {
+      tempData[item.id] = {
+        qty: saved?.items?.[item.id] ?? item.std,
+        ok: saved?.checked?.[item.id] ?? true
+      };
+    });
+  });
+  document.getElementById('modal-room-num').textContent = room;
+  const d = new Date(selectedDate + 'T00:00:00');
+  document.getElementById('modal-room-date').textContent = d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('modal-body').innerHTML = buildModalBody(saved?.notes || '', true);
+  document.getElementById('room-modal').classList.add('open');
+  document.getElementById('save-btn').style.display = 'none';
+}
+
+function buildModalBody(notes, readonly=false) {
+  let html = '';
+  AMENITIES.forEach(cat => {
+    html += `<div class="amenity-category ${cat.cls}">
+      <div class="category-header">
+        <div class="category-icon">${cat.icon}</div>
+        <div class="category-title">${cat.label}</div>
+      </div>`;
+    cat.items.forEach(item => {
+      const state = tempData[item.id];
+      const qtyClass = state.qty < item.std ? 'low' : 'ok';
+      html += `<div class="amenity-item" id="item-row-${item.id}">
+        <div class="amenity-name">
+          ${item.name}
+          <span class="std">Std: ${item.std} pcs</span>
+        </div>
+        <div class="qty-control">
+          ${readonly ? '' : `<button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>`}
+          <span class="qty-val ${qtyClass}" id="qty-${item.id}">${state.qty}</span>
+          ${readonly ? '' : `<button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>`}
+        </div>
+        <label class="toggle" title="Tersedia">
+          <input type="checkbox" id="chk-${item.id}" ${state.ok ? 'checked' : ''} ${readonly ? 'disabled' : ''} onchange="toggleItem('${item.id}')">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  html += `<div class="notes-section">
+    <label>Catatan Tambahan</label>
+    <textarea id="room-notes" placeholder="Tulis catatan jika ada (opsional)..." ${readonly ? 'readonly' : ''}>${notes}</textarea>
+  </div>`;
+
+  return html;
+}
+
+function changeQty(itemId, delta) {
+  tempData[itemId].qty = Math.max(0, (tempData[itemId].qty || 0) + delta);
+  const el = document.getElementById(`qty-${itemId}`);
+  const item = AMENITIES.flatMap(c=>c.items).find(i=>i.id===itemId);
+  el.textContent = tempData[itemId].qty;
+  el.className = `qty-val ${tempData[itemId].qty < item.std ? 'low' : 'ok'}`;
+}
+
+function toggleItem(itemId) {
+  const chk = document.getElementById(`chk-${itemId}`);
+  tempData[itemId].ok = chk.checked;
+}
+
+function closeModal() {
+  document.getElementById('room-modal').classList.remove('open');
+  currentRoomEdit = null;
+}
+
+function saveRoom() {
+  if (!currentRoomEdit) return;
+  if (!data[selectedDate]) data[selectedDate] = {};
+
+  const items = {}, checked = {};
+  Object.keys(tempData).forEach(k => {
+    items[k] = tempData[k].qty;
+    checked[k] = tempData[k].ok;
+  });
+
+  const notes = document.getElementById('room-notes')?.value || '';
+
+  data[selectedDate][currentRoomEdit] = {
+    items, checked, notes,
+    savedBy: currentUser,
+    savedAt: new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'})
+  };
+
+  // Log history
+  const status = getRoomStatus(currentRoomEdit);
+  history.unshift({
+    date: selectedDate,
+    room: currentRoomEdit,
+    status,
+    savedBy: currentUser,
+    role: currentRole,
+    savedAt: data[selectedDate][currentRoomEdit].savedAt,
+    notes
+  });
+  if (history.length > 200) history.pop();
+
+  localStorage.setItem('gsehati_data', JSON.stringify(data));
+  localStorage.setItem('gsehati_history', JSON.stringify(history));
+
+  closeModal();
+  renderRooms();
+  renderHistory();
+  showToast(`Kamar ${currentRoomEdit} berhasil disimpan ✓`, 'success');
+}
+
+// ===== DASHBOARD =====
+function updateDashboard(stats) {
+  if (currentRole !== 'supervisor' && currentRole !== 'receptionist') return;
+
+  // Stats
+  const total = ROOMS.length;
+  const checked = stats.complete + stats.partial + stats.incomplete;
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card done"><div class="stat-num">${stats.complete}</div><div class="stat-label">Lengkap</div></div>
+    <div class="stat-card partial"><div class="stat-num">${stats.partial}</div><div class="stat-label">Kurang</div></div>
+    <div class="stat-card empty"><div class="stat-num">${stats.incomplete}</div><div class="stat-label">Tdk Lengkap</div></div>
+    <div class="stat-card pending"><div class="stat-num">${stats.pending}</div><div class="stat-label">Belum Dicek</div></div>
+  `;
+
+  // Issues panel
+  let issues = [];
+  ROOMS.forEach(room => {
+    const d = getRoomData(room);
+    if (!d) return;
+    const problems = [];
+    AMENITIES.forEach(cat => {
+      cat.items.forEach(item => {
+        const qty = d.items?.[item.id] ?? item.std;
+        const ok = d.checked?.[item.id] ?? true;
+        if (!ok) problems.push(`${item.name} (tidak tersedia)`);
+        else if (qty < item.std) problems.push(`${item.name} (${qty}/${item.std})`);
+      });
+    });
+    if (problems.length > 0) {
+      issues.push({ room, problems, status: getRoomStatus(room) });
+    }
+  });
+
+  const issuesEl = document.getElementById('panel-issues');
+  if (issues.length === 0) {
+    issuesEl.innerHTML = '<div class="empty-state">Tidak ada masalah ditemukan. Semua kamar yang sudah dicek sudah lengkap! ✅</div>';
+  } else {
+    issuesEl.innerHTML = issues.map(i => `
+      <div class="issue-row">
+        <div class="issue-room">${i.room}</div>
+        <div class="issue-detail">${i.problems.slice(0,3).join(', ')}${i.problems.length>3?' …':''}</div>
+        <span class="issue-badge ${i.status==='partial'?'badge-amber':'badge-red'}">${i.problems.length} item</span>
+      </div>
+    `).join('');
+  }
+
+  // Category completeness
+  const allItems = AMENITIES.flatMap(c=>c.items);
+  const catEl = document.getElementById('panel-category');
+  catEl.innerHTML = AMENITIES.map(cat => {
+    let okCount = 0, totalCount = 0;
+    const checked = Object.values(data[selectedDate] || {});
+    if (checked.length === 0) {
+      return `<div class="amenity-bar-row">
+        <span class="amenity-bar-label">${cat.icon} ${cat.label}</span>
+        <div class="amenity-bar-track"><div class="amenity-bar-fill" style="width:0%"></div></div>
+        <span class="amenity-bar-pct">—</span>
+      </div>`;
+    }
+    checked.forEach(d => {
+      cat.items.forEach(item => {
+        totalCount++;
+        const qty = d.items?.[item.id] ?? item.std;
+        const ok = d.checked?.[item.id] ?? true;
+        if (ok && qty >= item.std) okCount++;
+      });
+    });
+    const pct = totalCount ? Math.round(okCount/totalCount*100) : 0;
+    const cls = pct < 50 ? 'low' : pct < 80 ? 'mid' : '';
+    return `<div class="amenity-bar-row">
+      <span class="amenity-bar-label">${cat.icon} ${cat.label}</span>
+      <div class="amenity-bar-track"><div class="amenity-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      <span class="amenity-bar-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Progress ring
+  const pct = total ? Math.round(checked/total*100) : 0;
+  const r = 30, circ = 2 * Math.PI * r;
+  const dash = (pct/100) * circ;
+  document.getElementById('panel-progress').innerHTML = `
+    <div class="progress-ring-wrap">
+      <div class="progress-ring">
+        <svg viewBox="0 0 80 80" width="80" height="80">
+          <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+          <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--gold)" stroke-width="8"
+            stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+        </svg>
+        <div class="progress-ring-num">${pct}%</div>
+      </div>
+      <div class="ring-desc">
+        <strong>${checked} dari ${total}</strong> kamar sudah dicek hari ini.<br>
+        ${stats.complete} lengkap · ${stats.partial} kurang · ${stats.incomplete} tidak lengkap
+      </div>
+    </div>
+  `;
+
+  // Most missing items
+  const missingCount = {};
+  Object.values(data[selectedDate] || {}).forEach(d => {
+    AMENITIES.flatMap(c=>c.items).forEach(item => {
+      const qty = d.items?.[item.id] ?? item.std;
+      const ok = d.checked?.[item.id] ?? true;
+      if (!ok || qty < item.std) {
+        missingCount[item.name] = (missingCount[item.name]||0) + 1;
+      }
+    });
+  });
+
+  const sorted = Object.entries(missingCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const misEl = document.getElementById('panel-missing');
+  if (sorted.length === 0) {
+    misEl.innerHTML = '<div class="empty-state">Tidak ada item yang kurang hari ini.</div>';
+  } else {
+    misEl.innerHTML = sorted.map(([name, count]) => `
+      <div class="amenity-bar-row">
+        <span class="amenity-bar-label" style="font-size:12px;color:var(--text)">${name}</span>
+        <div class="amenity-bar-track"><div class="amenity-bar-fill low" style="width:${Math.min(100,count/ROOMS.length*100)}%"></div></div>
+        <span class="amenity-bar-pct" style="color:var(--red)">${count}×</span>
+      </div>
+    `).join('');
+  }
+}
+
+// ===== HISTORY =====
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (history.length === 0) {
+    el.innerHTML = '<div class="empty-state">Belum ada riwayat pengecekan.</div>';
+    return;
+  }
+  el.innerHTML = history.slice(0,50).map(h => {
+    const badge = h.status==='complete'
+      ? '<span class="issue-badge badge-green">Lengkap</span>'
+      : h.status==='partial'
+      ? '<span class="issue-badge badge-amber">Kurang</span>'
+      : '<span class="issue-badge badge-red">Tdk Lengkap</span>';
+    return `<div class="history-entry">
+      <span class="history-time">${h.date}<br>${h.savedAt}</span>
+      <div style="flex:1">
+        <span class="room-tag">Kamar ${h.room}</span>
+        dicek oleh <b style="color:var(--text)">${h.savedBy}</b>
+        <span style="color:var(--text-dim)">(${ROLE_LABELS[h.role]})</span>
+        ${h.notes ? `<br><span style="color:var(--text-dim);font-size:11px">📝 ${h.notes}</span>` : ''}
+      </div>
+      ${badge}
+    </div>`;
+  }).join('');
+}
+
+// ===== TABS =====
+function switchTab(tab) {
+  ['rooms','dashboard','history'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t===tab ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  if (tab==='history') renderHistory();
+}
+
+// ===== TOAST =====
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Init
+initDate();
+</script>
+</body>
+</html>
